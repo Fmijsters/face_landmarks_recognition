@@ -37,6 +37,44 @@ def shape_to_np(shape, dtype="int"):
     return coords
 
 cap =  instantiateWebCam(0)
+def align(image,shape):
+    facewidth = 512
+    faceheight = 512
+    eyeWidth = 0.70
+    leftEyePts = shape[36:42]
+    rightEyePts = shape[43:47]
+    leftEyeCenter = leftEyePts.mean(axis=0).astype("int")
+    rightEyeCenter = rightEyePts.mean(axis=0).astype("int")
+    dY = rightEyeCenter[1] - leftEyeCenter[1]
+    dX = rightEyeCenter[0] - leftEyeCenter[0]
+    angle = np.degrees(np.arctan2(dY, dX)) - 180
+     # compute the desired right eye x-coordinate based on the
+    # desired x-coordinate of the left eye
+    desiredRightEyeX = 1.0 - eyeWidth
+    # determine the scale of the new resulting image by taking
+    # the ratio of the distance between eyes in the *current*
+    # image to the ratio of distance between eyes in the
+    # *desired* image
+    dist = np.sqrt((dX ** 2) + (dY ** 2))
+    desiredDist = (desiredRightEyeX - eyeWidth)
+    desiredDist *= facewidth
+    scale = desiredDist / dist
+    eyesCenter = ((leftEyeCenter[0] + rightEyeCenter[0]) // 2,
+            (leftEyeCenter[1] + rightEyeCenter[1]) // 2)
+ 
+    # grab the rotation matrix for rotating and scaling the face
+    M = cv2.getRotationMatrix2D(eyesCenter, angle, scale)
+    print(M)
+    # update the translation component of the matrix
+    tX = facewidth * 0.5
+    tY = faceheight * eyeWidth
+    M[0, 2] += (tX - eyesCenter[0])
+    M[1, 2] += (tY - eyesCenter[1])
+    (w, h) = (facewidth, faceheight)
+    output = cv2.warpAffine(image, M, (w, h),
+    flags=cv2.INTER_CUBIC)
+    # return the aligned face
+    return output
 
 def run():
     while(True):
@@ -46,15 +84,29 @@ def run():
         shape = None
         print("Number of faces detected: {}".format(len(dets)))
         for k, d in enumerate(dets):
-            print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(
-            k, d.left(), d.top(), d.right(), d.bottom()))
+            # print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(
+            # k, d.left(), d.top(), d.right(), d.bottom()))
                     # Get the landmarks/parts for the face in box d.
             shape = predictor(frame, d)
+            # print(shape)
             shape = shape_to_np(shape)
+            frame = align(frame,shape)
+
+            shape = predictor(frame, d)
+            # print(shape)
+            shape = shape_to_np(shape)
+            # print(shape)
+            # print(len(shape))
+            teller = 0
             for (x, y) in shape:
-                cv2.circle(frame, (x, y), 1, (0, 0, 255), -1)
-            print("Part 0: {}, Part 1: {} ...".format(shape.part(0),
-                                                  shape.part(1)))
+                r = 0
+                if (teller > 35 and teller < 43) or (teller > 42 and teller < 48):
+                    r=255
+                cv2.circle(frame, (x, y), 1, (r, 0, 255), -1)
+                teller = teller + 1
+
+            # print("Part 0: {}, Part 1: {} ...".format(shape.part(0),
+                                                  # shape.part(1)))
         
         cv2.imshow("Frame", frame)
         key = cv2.waitKey(1) & 0xFF
