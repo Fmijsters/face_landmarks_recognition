@@ -92,7 +92,7 @@ def detectPose(im,image_points):
      
     p1 = ( int(image_points[0][0]), int(image_points[0][1]))
     p2 = ( int(nose_end_point2D[0][0][0]), int(nose_end_point2D[0][0][1]))
-    print(p2)
+    # print(p2)
     cv2.line(im, p1, p2, (255,0,0), 2)
     return im
 
@@ -144,7 +144,7 @@ def align(image,shape):
     # return the aligned face
     return output
 
-def fix_the_alignment(frame):
+def fix_the_alignment(frame,normal):
     global detector
     dets = detector(frame, 1)
     shape = None
@@ -183,9 +183,9 @@ def fix_the_alignment(frame):
         h=d.bottom()-d.top()
         # crop_img = frame[y:y+h, x:x+w]
         frame = align(frame,shape)
-        return frame
+        return frame , normal
 
-def run():
+def run(allign, pose):
     while(True):
         ret, frame = cap.read()
         normal = frame
@@ -195,7 +195,8 @@ def run():
 
         global detector
         # uncomment to keep face straight when it tilts WIP
-        # frame = fix_the_alignment(frame)
+        if allign:
+            frame,normal = fix_the_alignment(frame,normal)
 
 
         dets = detector(frame,1)
@@ -233,16 +234,17 @@ def run():
 
 
         #Uncomment 2 lines below to enable pose detection
-        # image_points = np.array([
-        #                             shape[30],     # Nose tip
-        #                             shape[8],     # Chin
-        #                             shape[36],     # Left eye left corner
-        #                             shape[45],     # Right eye right corne
-        #                             shape[48],     # Left Mouth corner
-        #                             shape[54]      # Right mouth corner
-        #                         ], dtype="double")
+        if pose:
+            image_points = np.array([
+                                        shape[30],     # Nose tip
+                                        shape[8],     # Chin
+                                        shape[36],     # Left eye left corner
+                                        shape[45],     # Right eye right corne
+                                        shape[48],     # Left Mouth corner
+                                        shape[54]      # Right mouth corner
+                                    ], dtype="double")
 
-        # frame = detectPose(frame,image_points)
+            frame = detectPose(frame,image_points)
 
         cv2.imshow("Detection", frame)
         key = cv2.waitKey(1) & 0xFF
@@ -251,4 +253,11 @@ def run():
         if key == ord("q"):
             break
 
-run()
+allign = False
+pose = False
+print(sys.argv)
+if "allign" in sys.argv:
+    allign = True
+if "pose" in sys.argv:
+    pose = True
+run(allign,pose)
