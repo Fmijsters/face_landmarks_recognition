@@ -6,14 +6,19 @@ import dlib
 import math
 import sys
 import time
+import matplotlib.pyplot as plt
+
+from skimage import data, transform
+
 # from imutils import face_utils
 subjects  =["","Fabian Mijsters","Random Person"]
 
-global face_cascade, predictor,clahe,detector
+global face_cascade, predictor,clahe,detector, angle
 face_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_default.xml')
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 detector = dlib.get_frontal_face_detector()
+angle = 0
 
 
 def instantiateWebCam(source):
@@ -41,7 +46,7 @@ cap =  instantiateWebCam(0)
 
 def detectPose(im,image_points):
     size = im.shape
-     
+    global angle
 #2D image points. If you change the image, you need to change vector
     # image_points = np.array([
     #                             (359, 391),     # Nose tip
@@ -75,23 +80,70 @@ def detectPose(im,image_points):
      
     dist_coeffs = np.zeros((4,1)) # Assuming no lens distortion
     (success, rotation_vector, translation_vector) = cv2.solvePnP(model_points, image_points, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_ITERATIVE)
-     
-    print("Rotation Vector:\n {0}".format(rotation_vector))
+    
+
+    # print("Rotation Vector:\n {0}".format(rotation_vector))
     # print( "Translation Vector:\n {0}".format(translation_vector))
-     
-     
+    # print(math.tan(rotation_vector[0]/rotation_vector[1]))
+    angle = angle + math.tan(rotation_vector[0]/rotation_vector[1])
+    # print(angle)
     # Project a 3D point (0, 0, 1000.0) onto the image plane.
     # We use this to draw a line sticking out of the nose
-     
-     
     (nose_end_point2D, jacobian) = cv2.projectPoints(np.array([(0.0, 0.0, 1000.0)]), rotation_vector, translation_vector, camera_matrix, dist_coeffs)
-     
+    
     for p in image_points:
         cv2.circle(im, (int(p[0]), int(p[1])), 3, (0,0,255), -1)
      
-     
     p1 = ( int(image_points[0][0]), int(image_points[0][1]))
     p2 = ( int(nose_end_point2D[0][0][0]), int(nose_end_point2D[0][0][1]))
+    # delta_x = p2[0] - p1[0]
+    # delta_y = p1[1] - p2[1]
+    # theta_radians = math.atan2(delta_y, delta_x) 
+
+    # theta = theta_radians
+    # tx = 0
+    # ty = 0
+
+    # S, C = np.sin(theta), np.cos(theta)
+
+    # H = np.array([[C, -S, tx],
+    #       [S,  C, ty],
+    #       [0,  0, 1]])
+    
+   
+
+
+
+
+    # r, c = im.shape[0:2]
+
+    # T = np.array([[1, 0, -c / 2.],
+    #               [0, 1, -r / 2.],
+    #               [0, 0, 1]])
+
+    # S = np.array([[1, 0, 0],
+    #               [0, 1.3, 0],
+    #               [0, 1e-3, 1]])
+
+    # # img_rot = transform.ProjectiveTransform(im, H)
+    # trans = transform.ProjectiveTransform(H)
+    # img_rot_center_skew = transform.warp(im, transform.ProjectiveTransform(S.dot(np.linalg.inv(T).dot(H).dot(T))))
+    # img_rot = transform.warp(im, trans)
+    # f, (ax0, ax1, ax2) = plt.subplots(1, 3)
+    # ax0.imshow(im, cmap=plt.cm.gray, interpolation='nearest')
+    # ax1.imshow(img_rot, cmap=plt.cm.gray, interpolation='nearest')
+    # ax2.imshow(img_rot_center_skew, cmap=plt.cm.gray, interpolation='nearest')
+    # plt.show()
+
+
+
+
+
+    # print(math.degrees(theta_radians))
+    # print(math.tan(p2[0]/p1[0]))
+    # print(math.tan(p2[1]/p1[1]))
+    # print(str(p1) + " - " + str(p2))
+    # print(p2) 
     # print(p2)
     cv2.line(im, p1, p2, (255,0,0), 2)
     return im
