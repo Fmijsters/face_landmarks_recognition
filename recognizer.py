@@ -96,50 +96,44 @@ def detectPose(im,image_points):
      
     p1 = ( int(image_points[0][0]), int(image_points[0][1]))
     p2 = ( int(nose_end_point2D[0][0][0]), int(nose_end_point2D[0][0][1]))
-    # delta_x = p2[0] - p1[0]
-    # delta_y = p1[1] - p2[1]
-    # theta_radians = math.atan2(delta_y, delta_x) 
+    if test:
+        delta_x = p1[0] - p2[0]
+        delta_y = p1[1] - p2[1]
+        theta_radians = math.atan2(delta_y, delta_x) 
+        theta_radians = math.tan(rotation_vector[1]/rotation_vector[0])
+        theta = theta_radians
+        tx = 0
+        ty = 0
 
-    # theta = theta_radians
-    # tx = 0
-    # ty = 0
+        S, C = np.sin(theta), np.cos(theta)
 
-    # S, C = np.sin(theta), np.cos(theta)
+        H = np.array([[C, -S, tx],
+              [S,  C, ty],
+              [0,  0, 1]])
+        
+        r, c = im.shape[0:2]
 
-    # H = np.array([[C, -S, tx],
-    #       [S,  C, ty],
-    #       [0,  0, 1]])
-    
-   
+        T = np.array([[1, 0, -c / 2.],
+                      [0, 1, -r / 2.],
+                      [0, 0, 1]])
+        # print(translation_vector)
+        S = np.array([[1, 0, 0],
+                      [0, 1.3, 0],
+                      [0, 1e-3, 1]])
 
-
-
-
-    # r, c = im.shape[0:2]
-
-    # T = np.array([[1, 0, -c / 2.],
-    #               [0, 1, -r / 2.],
-    #               [0, 0, 1]])
-
-    # S = np.array([[1, 0, 0],
-    #               [0, 1.3, 0],
-    #               [0, 1e-3, 1]])
-
-    # # img_rot = transform.ProjectiveTransform(im, H)
-    # trans = transform.ProjectiveTransform(H)
-    # img_rot_center_skew = transform.warp(im, transform.ProjectiveTransform(S.dot(np.linalg.inv(T).dot(H).dot(T))))
-    # img_rot = transform.warp(im, trans)
-    # f, (ax0, ax1, ax2) = plt.subplots(1, 3)
-    # ax0.imshow(im, cmap=plt.cm.gray, interpolation='nearest')
-    # ax1.imshow(img_rot, cmap=plt.cm.gray, interpolation='nearest')
-    # ax2.imshow(img_rot_center_skew, cmap=plt.cm.gray, interpolation='nearest')
-    # plt.show()
+        # img_rot = transform.ProjectiveTransform(im, H)
+        trans = transform.ProjectiveTransform(H)
+        img_rot_center_skew = transform.warp(im, transform.ProjectiveTransform(S.dot(np.linalg.inv(T).dot(H).dot(T))))
+        img_rot = transform.warp(im, trans)
+        f, (ax0, ax1, ax2) = plt.subplots(1, 3)
+        ax0.imshow(im, cmap=plt.cm.gray, interpolation='nearest')
+        ax1.imshow(img_rot, cmap=plt.cm.gray, interpolation='nearest')
+        ax2.imshow(img_rot_center_skew, cmap=plt.cm.gray, interpolation='nearest')
+        plt.show()
+        print(math.degrees(theta_radians))
 
 
 
-
-
-    # print(math.degrees(theta_radians))
     # print(math.tan(p2[0]/p1[0]))
     # print(math.tan(p2[1]/p1[1]))
     # print(str(p1) + " - " + str(p2))
